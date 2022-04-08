@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Part 1 - Build a webapp stack with CloudFormation
+
+Resources:
+  WebAppInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c02fb55956c7d316 # ImageID valid only in us-east-1 region
+      InstanceType: t2.micro
+      KeyName: fh-jenkins # <-- Change to use your key-pair name
+      SecurityGroupIds:
+        - !Ref WebAppSecurityGroup
+      UserData:
+        Fn::Base64: 
+          !Sub |
+            #!/bin/bash
+            sudo su
+            sudo yum update -y
+            sudo yum install -y httpd.x86_64
+            sudo systemctl start httpd.service
+            sudo systemctl enable httpd.service
+            sudo echo ?Hello World from $(hostname -f)? > /var/www/html/index.html
+
+  WebAppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "testJenkinsSecurityGroup"
+      GroupDescription: "Allow HTTP/HTTPS and SSH inbound and outbound traffic"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 189.202.95.45/32
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 200.68.176.214/32
+
+
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt WebAppInstance.PublicIp
+    Description: WebApp URL
